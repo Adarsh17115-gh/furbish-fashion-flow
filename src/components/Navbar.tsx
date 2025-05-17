@@ -1,128 +1,92 @@
 
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
-import { ShoppingCart, Menu, X, Search } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { ShoppingBag, User, Menu, Package, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuSeparator, 
+  DropdownMenuTrigger 
+} from '@/components/ui/dropdown-menu';
 
-const categories = [
-  { name: "Women", path: "/category/women" },
-  { name: "Men", path: "/category/men" },
-  { name: "Accessories", path: "/category/accessories" },
-  { name: "New Arrivals", path: "/new-arrivals" },
-  { name: "Sale", path: "/sale" },
-];
+const Navbar = () => {
+  const { user, isAdmin, signOut } = useAuth();
 
-export const Navbar = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur">
+    <header className="border-b bg-white">
       <div className="container flex h-16 items-center justify-between">
-        {/* Mobile menu button */}
-        <div className="md:hidden">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-          >
-            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </div>
-        
-        {/* Logo */}
-        <div className="flex items-center">
-          <Link to="/" className="flex items-center">
-            <h1 className="text-xl font-semibold md:text-2xl tracking-tight">
-              Furbish<span className="text-terracotta">Studios</span>
-            </h1>
+        <div className="flex items-center gap-6">
+          <Link to="/" className="font-serif text-xl font-bold text-terracotta">
+            FurbishStudios
           </Link>
-        </div>
-        
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-6">
-          {categories.map((category) => (
-            <Link
-              key={category.path}
-              to={category.path}
-              className="text-sm font-medium transition-colors hover:text-terracotta"
-            >
-              {category.name}
+
+          <nav className="hidden md:flex gap-6">
+            <Link to="/" className="text-sm font-medium transition-colors hover:text-terracotta">
+              Home
             </Link>
-          ))}
-        </nav>
-        
-        {/* Right Side - Search & Cart */}
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-            aria-label={isSearchOpen ? "Close search" : "Search"}
-          >
-            <Search className="h-5 w-5" />
-          </Button>
+            <Link to="/category/women" className="text-sm font-medium transition-colors hover:text-terracotta">
+              Women
+            </Link>
+            <Link to="/category/men" className="text-sm font-medium transition-colors hover:text-terracotta">
+              Men
+            </Link>
+            <Link to="/category/accessories" className="text-sm font-medium transition-colors hover:text-terracotta">
+              Accessories
+            </Link>
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-4">
+          {!user ? (
+            <Button variant="outline" asChild>
+              <Link to="/auth">
+                <User className="h-4 w-4 mr-2" />
+                Login / Register
+              </Link>
+            </Button>
+          ) : (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <User className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/orders" className="flex items-center">
+                    <ShoppingBag className="h-4 w-4 mr-2" />
+                    My Orders
+                  </Link>
+                </DropdownMenuItem>
+                
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="flex items-center">
+                        <Package className="h-4 w-4 mr-2" />
+                        Admin Dashboard
+                      </Link>
+                    </DropdownMenuItem>
+                  </>
+                )}
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           
-          <Link to="/cart">
-            <Button variant="ghost" size="icon">
-              <ShoppingCart className="h-5 w-5" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="icon" className="md:hidden">
+            <Menu className="h-5 w-5" />
+          </Button>
         </div>
       </div>
-      
-      {/* Mobile menu */}
-      <div 
-        className={cn(
-          "fixed inset-0 top-16 z-40 w-full bg-background md:hidden",
-          isMenuOpen ? "flex flex-col animate-fade-in" : "hidden"
-        )}
-      >
-        <nav className="flex flex-col gap-4 p-6">
-          {categories.map((category) => (
-            <Link
-              key={category.path}
-              to={category.path}
-              className="text-lg font-medium py-2 transition-colors hover:text-terracotta"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              {category.name}
-            </Link>
-          ))}
-          <div className="h-px bg-border my-4" />
-          <Link 
-            to="/admin/login" 
-            className="text-lg font-medium py-2 text-muted-foreground"
-            onClick={() => setIsMenuOpen(false)}
-          >
-            Admin Login
-          </Link>
-        </nav>
-      </div>
-      
-      {/* Search overlay */}
-      {isSearchOpen && (
-        <div className="absolute top-16 left-0 w-full bg-background border-b p-4 animate-fade-in">
-          <div className="container mx-auto flex items-center">
-            <input
-              type="text"
-              placeholder="Search for products..."
-              className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              autoFocus
-            />
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="ml-2" 
-              onClick={() => setIsSearchOpen(false)}
-            >
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      )}
     </header>
   );
 };

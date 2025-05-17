@@ -4,12 +4,20 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Pages
 import Index from "./pages/Index";
 import ProductDetail from "./pages/ProductDetail";
 import CategoryPage from "./pages/CategoryPage";
 import NotFound from "./pages/NotFound";
+import Auth from "./pages/Auth";
+import Dashboard from "./pages/admin/Dashboard";
+import ProductManager from "./pages/admin/ProductManager";
+import OrderManager from "./pages/admin/OrderManager";
+import Checkout from "./pages/Checkout";
+import OrderHistory from "./pages/OrderHistory";
 
 const queryClient = new QueryClient();
 
@@ -19,12 +27,35 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/category/:category" element={<CategoryPage />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/" element={<Index />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
+            <Route path="/category/:category" element={<CategoryPage />} />
+            
+            {/* Auth routes (only for non-authenticated users) */}
+            <Route element={<ProtectedRoute requireAuth={false} redirectTo="/" />}>
+              <Route path="/auth" element={<Auth />} />
+            </Route>
+            
+            {/* Protected routes (requires authentication) */}
+            <Route element={<ProtectedRoute requireAuth={true} />}>
+              <Route path="/checkout/:id" element={<Checkout />} />
+              <Route path="/orders" element={<OrderHistory />} />
+            </Route>
+            
+            {/* Admin routes */}
+            <Route element={<ProtectedRoute requireAuth={true} requireAdmin={true} />}>
+              <Route path="/admin" element={<Dashboard />} />
+              <Route path="/admin/products" element={<ProductManager />} />
+              <Route path="/admin/orders" element={<OrderManager />} />
+            </Route>
+            
+            {/* 404 route */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

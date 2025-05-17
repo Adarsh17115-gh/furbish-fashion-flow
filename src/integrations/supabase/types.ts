@@ -9,7 +9,116 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          buyer_address: string
+          buyer_name: string
+          buyer_phone: string
+          created_at: string | null
+          id: string
+          payment_proof_url: string | null
+          product_id: string
+          quantity: number
+          size: string
+          status: string
+          total_amount: number
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          buyer_address: string
+          buyer_name: string
+          buyer_phone: string
+          created_at?: string | null
+          id?: string
+          payment_proof_url?: string | null
+          product_id: string
+          quantity?: number
+          size: string
+          status?: string
+          total_amount: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          buyer_address?: string
+          buyer_name?: string
+          buyer_phone?: string
+          created_at?: string | null
+          id?: string
+          payment_proof_url?: string | null
+          product_id?: string
+          quantity?: number
+          size?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          brand: string | null
+          category: string
+          condition: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_featured: boolean
+          is_visible: boolean
+          original_price: number | null
+          price: number
+          seller_id: string | null
+          seller_info: Json | null
+          sizes: string[]
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          brand?: string | null
+          category: string
+          condition?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_featured?: boolean
+          is_visible?: boolean
+          original_price?: number | null
+          price: number
+          seller_id?: string | null
+          seller_info?: Json | null
+          sizes: string[]
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          brand?: string | null
+          category?: string
+          condition?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_featured?: boolean
+          is_visible?: boolean
+          original_price?: number | null
+          price?: number
+          seller_id?: string | null
+          seller_info?: Json | null
+          sizes?: string[]
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
