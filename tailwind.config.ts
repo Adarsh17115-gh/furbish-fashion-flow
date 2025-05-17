@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,32 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// FurbishStudios custom colors
+				sage: {
+					light: '#E4EAE2',
+					DEFAULT: '#B7C4B1',
+					dark: '#96A68F',
+				},
+				terracotta: {
+					light: '#E6C8BC',
+					DEFAULT: '#D9A590',
+					dark: '#C27C64',
+				},
+				cream: {
+					light: '#FFFDF6',
+					DEFAULT: '#F5F1E6',
+					dark: '#E8E2D3',
+				},
+				softblue: {
+					light: '#E1E7EE',
+					DEFAULT: '#C3D3E2',
+					dark: '#A0B7CF',
+				},
+				charcoal: {
+					light: '#6C7478',
+					DEFAULT: '#4A5055',
+					dark: '#2A2E32',
 				}
 			},
 			borderRadius: {
@@ -84,11 +111,26 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'fade-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'fade-in': 'fade-in 0.3s ease-out',
+			},
+			fontFamily: {
+				sans: ['Inter', 'sans-serif'],
+				serif: ['DM Serif Display', 'serif'],
 			}
 		}
 	},
