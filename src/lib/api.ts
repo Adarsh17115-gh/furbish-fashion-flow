@@ -36,7 +36,7 @@ export const fetchProducts = async (filters: {
 
     const images = imageList
       ? imageList.map(file => 
-          `${SUPABASE_URL}/storage/v1/object/public/product-images/${product.id}/${file.name}`
+          `${supabase.supabaseUrl}/storage/v1/object/public/product-images/${product.id}/${file.name}`
         )
       : [];
 
@@ -65,7 +65,7 @@ export const fetchProductById = async (id: string) => {
 
   const images = imageList
     ? imageList.map(file => 
-        `${SUPABASE_URL}/storage/v1/object/public/product-images/${id}/${file.name}`
+        `${supabase.supabaseUrl}/storage/v1/object/public/product-images/${id}/${file.name}`
       )
     : ['/placeholder.svg'];
   
@@ -169,7 +169,7 @@ export const uploadProductImage = async (productId: string, file: File) => {
   
   if (error) throw error;
   
-  return `${SUPABASE_URL}/storage/v1/object/public/product-images/${filePath}`;
+  return `${supabase.supabaseUrl}/storage/v1/object/public/product-images/${filePath}`;
 };
 
 // Helper to upload payment proof
