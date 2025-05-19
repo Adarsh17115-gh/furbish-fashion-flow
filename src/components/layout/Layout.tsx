@@ -2,8 +2,8 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import PromotionalBanner from '../marketing/PromotionalBanner';
-import FlashSalePopup from '../marketing/FlashSalePopup';
+import PromotionalBanner from '@/components/PromotionalBanner';
+import FlashSalePopup from '@/components/marketing/FlashSalePopup';
 
 interface LayoutProps {
   children: ReactNode;
