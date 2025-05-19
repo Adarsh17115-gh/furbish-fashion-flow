@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Product as DatabaseProduct } from '@/types/database';
 import { adaptDatabaseProductsToUI, adaptDatabaseProductToUI } from '@/lib/adapters';
@@ -17,15 +16,10 @@ export const fetchProducts = async (filters: {
   limit?: number;
 } = {}): Promise<UIProduct[]> => {
   let query = supabase.from('products')
-    .select('*')
-    .eq('is_visible', true);
+    .select('*');
     
   if (filters.category) {
     query = query.eq('category', filters.category);
-  }
-  
-  if (filters.subcategory) {
-    query = query.eq('subcategory', filters.subcategory);
   }
   
   if (filters.featured) {
