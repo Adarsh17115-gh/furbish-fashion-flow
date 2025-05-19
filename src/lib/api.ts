@@ -1,5 +1,6 @@
+
 import { supabase } from '@/integrations/supabase/client';
-import { Product, Order } from '@/types/database';
+import { Product as DatabaseProduct, Order } from '@/types/database';
 import { adaptDatabaseProductsToUI, adaptDatabaseProductToUI } from '@/lib/adapters';
 import { Product as UIProduct } from '@/data/products';
 
@@ -9,7 +10,7 @@ export const fetchProducts = async (filters: {
   subcategory?: string;
   featured?: boolean;
   limit?: number;
-} = {}) => {
+} = {}): Promise<UIProduct[]> => {
   let query = supabase.from('products')
     .select('*')
     .eq('is_visible', true);
@@ -52,12 +53,12 @@ export const fetchProducts = async (filters: {
     };
   }));
   
-  const dbProducts = productsWithImages as Product[];
+  const dbProducts = productsWithImages as DatabaseProduct[];
   return adaptDatabaseProductsToUI(dbProducts);
 };
 
 // Update the fetchProductById function to also use the adapter
-export const fetchProductById = async (id: string) => {
+export const fetchProductById = async (id: string): Promise<UIProduct> => {
   const { data, error } = await supabase
     .from('products')
     .select('*')
@@ -77,7 +78,7 @@ export const fetchProductById = async (id: string) => {
       )
     : ['/placeholder.svg'];
   
-  const productWithImages = { ...data, images } as Product;
+  const productWithImages = { ...data, images } as DatabaseProduct;
   return adaptDatabaseProductToUI(productWithImages);
 };
 
@@ -139,7 +140,7 @@ export const updateOrderStatus = async (id: string, status: Order['status']) => 
   return data as Order;
 };
 
-export const addProduct = async (product: Omit<Product, 'id' | 'created_at' | 'updated_at'>) => {
+export const addProduct = async (product: Omit<DatabaseProduct, 'id' | 'created_at' | 'updated_at'>) => {
   const { data, error } = await supabase
     .from('products')
     .insert(product)
@@ -147,10 +148,10 @@ export const addProduct = async (product: Omit<Product, 'id' | 'created_at' | 'u
     .single();
   
   if (error) throw error;
-  return data as Product;
+  return data as DatabaseProduct;
 };
 
-export const updateProduct = async (id: string, updates: Partial<Product>) => {
+export const updateProduct = async (id: string, updates: Partial<DatabaseProduct>) => {
   const { data, error } = await supabase
     .from('products')
     .update(updates)
@@ -159,7 +160,7 @@ export const updateProduct = async (id: string, updates: Partial<Product>) => {
     .single();
   
   if (error) throw error;
-  return data as Product;
+  return data as DatabaseProduct;
 };
 
 export const deleteProduct = async (id: string) => {

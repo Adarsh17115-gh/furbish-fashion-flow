@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, ShoppingCart, Upload, AlertTriangle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Order } from '@/types/database';
+import { Product } from '@/data/products';
 
 const Checkout = () => {
   const { id } = useParams<{ id: string }>();
@@ -168,13 +169,13 @@ const Checkout = () => {
                   <div className="aspect-square w-24 h-24 relative overflow-hidden rounded-md border">
                     <img 
                       src={product.images && product.images.length > 0 ? product.images[0] : '/placeholder.svg'} 
-                      alt={product.title} 
+                      alt={product.name} 
                       className="object-cover h-full w-full"
                     />
                   </div>
                   
                   <div className="flex-1">
-                    <h3 className="font-medium">{product.title}</h3>
+                    <h3 className="font-medium">{product.name}</h3>
                     <p className="text-sm text-muted-foreground">{product.brand || 'Unbranded'} · Condition: {product.condition}</p>
                     
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -218,9 +219,9 @@ const Checkout = () => {
                   
                   <div className="text-right">
                     <p className="text-terracotta font-bold">${product.price.toFixed(2)}</p>
-                    {product.original_price && (
+                    {product.originalPrice && (
                       <p className="text-sm text-muted-foreground line-through">
-                        ${product.original_price.toFixed(2)}
+                        ${product.originalPrice.toFixed(2)}
                       </p>
                     )}
                   </div>
