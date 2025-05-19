@@ -5,6 +5,7 @@ import { Product, Order } from '@/types/database';
 // Product APIs
 export const fetchProducts = async (filters: {
   category?: string;
+  subcategory?: string;
   featured?: boolean;
   limit?: number;
 } = {}) => {
@@ -14,6 +15,10 @@ export const fetchProducts = async (filters: {
     
   if (filters.category) {
     query = query.eq('category', filters.category);
+  }
+  
+  if (filters.subcategory) {
+    query = query.eq('subcategory', filters.subcategory);
   }
   
   if (filters.featured) {
@@ -36,7 +41,7 @@ export const fetchProducts = async (filters: {
 
     const images = imageList
       ? imageList.map(file => 
-          `${supabase.supabaseUrl}/storage/v1/object/public/product-images/${product.id}/${file.name}`
+          `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${product.id}/${file.name}`
         )
       : [];
 
@@ -65,7 +70,7 @@ export const fetchProductById = async (id: string) => {
 
   const images = imageList
     ? imageList.map(file => 
-        `${supabase.supabaseUrl}/storage/v1/object/public/product-images/${id}/${file.name}`
+        `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${id}/${file.name}`
       )
     : ['/placeholder.svg'];
   
@@ -74,9 +79,15 @@ export const fetchProductById = async (id: string) => {
 
 // Order APIs
 export const createOrder = async (order: Omit<Order, 'id' | 'created_at' | 'updated_at'>) => {
+  // Ensure the status is properly typed
+  const orderWithTypedStatus = {
+    ...order,
+    status: order.status as Order['status'] // Cast to the proper union type
+  };
+
   const { data, error } = await supabase
     .from('orders')
-    .insert(order)
+    .insert(orderWithTypedStatus)
     .select()
     .single();
   
@@ -169,7 +180,7 @@ export const uploadProductImage = async (productId: string, file: File) => {
   
   if (error) throw error;
   
-  return `${supabase.supabaseUrl}/storage/v1/object/public/product-images/${filePath}`;
+  return `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${filePath}`;
 };
 
 // Helper to upload payment proof

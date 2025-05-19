@@ -1,6 +1,7 @@
 
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Watch } from 'lucide-react';
 
 const Hero = () => {
   return (
@@ -12,7 +13,7 @@ const Hero = () => {
               Pre-loved Style, <span className="text-terracotta">Future-focused</span> Fashion
             </h1>
             <p className="text-lg text-muted-foreground">
-              Discover unique fashion pieces at a fraction of their original price. 
+              Discover unique women's fashion pieces and vintage watches at a fraction of their original price. 
               Sustainable, affordable, stylish.
             </p>
             <div className="flex flex-wrap gap-4">
@@ -20,7 +21,10 @@ const Hero = () => {
                 <Link to="/category/women">Shop Women</Link>
               </Button>
               <Button asChild variant="outline" size="lg">
-                <Link to="/category/men">Shop Men</Link>
+                <Link to="/category/watches">
+                  <Watch className="h-4 w-4 mr-2" />
+                  Shop Watches
+                </Link>
               </Button>
             </div>
           </div>

@@ -1,13 +1,23 @@
 
 import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Layout from '@/components/Layout';
 import Hero from '@/components/Hero';
-import FeaturedCategories from '@/components/FeaturedCategories';
+import CustomFeaturedCategories from '@/components/CustomFeaturedCategories';
 import ProductGrid from '@/components/ProductGrid';
-import { getFeaturedProducts } from '@/data/products';
+import { fetchProducts } from '@/lib/api';
+import { Loader2 } from 'lucide-react';
 
 const Index = () => {
-  const featuredProducts = getFeaturedProducts();
+  const { data: womenFeaturedProducts, isLoading: womenLoading } = useQuery({
+    queryKey: ['products', 'women', 'featured'],
+    queryFn: () => fetchProducts({ category: 'women', featured: true, limit: 4 })
+  });
+  
+  const { data: watchesFeaturedProducts, isLoading: watchesLoading } = useQuery({
+    queryKey: ['products', 'watches', 'featured'],
+    queryFn: () => fetchProducts({ category: 'watches', featured: true, limit: 4 })
+  });
 
   useEffect(() => {
     // Scroll to top on page load
@@ -19,19 +29,37 @@ const Index = () => {
       <Hero />
       
       <div className="container">
-        <FeaturedCategories />
+        <CustomFeaturedCategories />
         
-        <ProductGrid 
-          products={featuredProducts} 
-          title="Featured Products" 
-          className="py-12 md:py-16"
-        />
+        {womenLoading ? (
+          <div className="py-12 flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-terracotta" />
+          </div>
+        ) : (
+          <ProductGrid 
+            products={womenFeaturedProducts || []} 
+            title="Featured Women's Fashion" 
+            className="py-12 md:py-16"
+          />
+        )}
+        
+        {watchesLoading ? (
+          <div className="py-12 flex justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-terracotta" />
+          </div>
+        ) : (
+          <ProductGrid 
+            products={watchesFeaturedProducts || []} 
+            title="Featured Vintage Watches" 
+            className="py-12 md:py-16"
+          />
+        )}
         
         <section className="py-12 md:py-16 text-center">
           <div className="max-w-3xl mx-auto space-y-4">
             <h2 className="text-2xl md:text-3xl font-serif">Why FurbishStudios?</h2>
             <p className="text-muted-foreground">
-              At FurbishStudios, we're passionate about giving pre-loved clothing a second life. 
+              At FurbishStudios, we're passionate about giving pre-loved clothing and vintage watches a second life. 
               Our platform connects fashion lovers with unique, high-quality pieces at a fraction 
               of their original price, helping reduce fashion waste while keeping you stylish.
             </p>
