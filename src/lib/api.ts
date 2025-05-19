@@ -35,14 +35,20 @@ export const fetchProducts = async (filters: {
   
   if (error) throw error;
 
+  // Define a simplified type for storage responses to avoid excessive type recursion
+  type StorageResponse = {
+    data: { name: string }[] | null;
+    error: Error | null;
+  };
+
   // Fetch images for each product
   const productsWithImages = await Promise.all((data || []).map(async (product) => {
-    const { data: imageList } = await supabase.storage
+    const storageResponse: StorageResponse = await supabase.storage
       .from('product-images')
       .list(product.id.toString());
 
-    const images = imageList
-      ? imageList.map(file => 
+    const images = storageResponse.data
+      ? storageResponse.data.map(file => 
           `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${product.id}/${file.name}`
         )
       : [];
@@ -53,8 +59,8 @@ export const fetchProducts = async (filters: {
     };
   }));
   
-  // Explicitly type the products before adaptation
-  const dbProducts = productsWithImages as DatabaseProduct[];
+  // Cast products with defined type to avoid TypeScript recursion
+  const dbProducts: DatabaseProduct[] = productsWithImages as DatabaseProduct[];
   return adaptDatabaseProductsToUI(dbProducts);
 };
 
@@ -68,13 +74,18 @@ export const fetchProductById = async (id: string): Promise<UIProduct> => {
   
   if (error) throw error;
   
-  // Fetch images for the product
-  const { data: imageList } = await supabase.storage
+  // Use same approach with explicit typing for storage response
+  type StorageResponse = {
+    data: { name: string }[] | null;
+    error: Error | null;
+  };
+
+  const storageResponse: StorageResponse = await supabase.storage
     .from('product-images')
     .list(id);
 
-  const images = imageList
-    ? imageList.map(file => 
+  const images = storageResponse.data
+    ? storageResponse.data.map(file => 
         `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${id}/${file.name}`
       )
     : ['/placeholder.svg'];
