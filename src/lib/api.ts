@@ -53,6 +53,7 @@ export const fetchProducts = async (filters: {
     };
   }));
   
+  // Explicitly type the products before adaptation
   const dbProducts = productsWithImages as DatabaseProduct[];
   return adaptDatabaseProductsToUI(dbProducts);
 };

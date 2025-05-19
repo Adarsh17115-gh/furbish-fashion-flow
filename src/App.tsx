@@ -24,6 +24,8 @@ import FAQ from "./pages/FAQ";
 import Shipping from "./pages/Shipping";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import Wishlist from "./pages/Wishlist";
+import Blog from "./pages/Blog";
 
 const queryClient = new QueryClient();
 
@@ -39,6 +41,9 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/category/:category" element={<CategoryPage />} />
+            <Route path="/category/:category/:subcategory" element={<CategoryPage />} />
+            <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/blog" element={<Blog />} />
             
             {/* Footer pages */}
             <Route path="/about" element={<AboutUs />} />
