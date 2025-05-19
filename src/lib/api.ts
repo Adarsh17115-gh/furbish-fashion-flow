@@ -1,8 +1,13 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Product as DatabaseProduct, Order } from '@/types/database';
 import { adaptDatabaseProductsToUI, adaptDatabaseProductToUI } from '@/lib/adapters';
 import { Product as UIProduct } from '@/data/products';
+
+// Define simplified types for storage responses to avoid excessive type recursion
+type StorageResponse = {
+  data: { name: string }[] | null;
+  error: Error | null;
+};
 
 // Product APIs
 export const fetchProducts = async (filters: {
@@ -34,12 +39,6 @@ export const fetchProducts = async (filters: {
   const { data, error } = await query;
   
   if (error) throw error;
-
-  // Define a simplified type for storage responses to avoid excessive type recursion
-  type StorageResponse = {
-    data: { name: string }[] | null;
-    error: Error | null;
-  };
 
   // Fetch images for each product
   const productsWithImages = await Promise.all((data || []).map(async (product) => {
@@ -74,12 +73,6 @@ export const fetchProductById = async (id: string): Promise<UIProduct> => {
   
   if (error) throw error;
   
-  // Use same approach with explicit typing for storage response
-  type StorageResponse = {
-    data: { name: string }[] | null;
-    error: Error | null;
-  };
-
   const storageResponse: StorageResponse = await supabase.storage
     .from('product-images')
     .list(id);
