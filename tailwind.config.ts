@@ -63,16 +63,16 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				// FurbishStudios custom colors
-				sage: {
-					light: '#E4EAE2',
-					DEFAULT: '#B7C4B1',
-					dark: '#96A68F',
-				},
+				// FurbishStudios custom colors - Our Blush & Gold palette
 				terracotta: {
 					light: '#E6C8BC',
 					DEFAULT: '#D9A590',
 					dark: '#C27C64',
+				},
+				sage: {
+					light: '#E4EAE2',
+					DEFAULT: '#B7C4B1',
+					dark: '#96A68F',
 				},
 				cream: {
 					light: '#FFFDF6',

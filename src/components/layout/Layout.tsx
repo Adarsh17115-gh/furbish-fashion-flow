@@ -2,7 +2,7 @@
 import { ReactNode, useState, useEffect } from 'react';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import PromotionalBanner from '@/components/PromotionalBanner';
+import PromotionalBanner from '@/components/marketing/PromotionalBanner';
 import FlashSalePopup from '@/components/marketing/FlashSalePopup';
 
 interface LayoutProps {
