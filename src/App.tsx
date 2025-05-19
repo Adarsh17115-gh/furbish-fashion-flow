@@ -18,6 +18,12 @@ import ProductManager from "./pages/admin/ProductManager";
 import OrderManager from "./pages/admin/OrderManager";
 import Checkout from "./pages/Checkout";
 import OrderHistory from "./pages/OrderHistory";
+import AboutUs from "./pages/AboutUs";
+import Contact from "./pages/Contact";
+import FAQ from "./pages/FAQ";
+import Shipping from "./pages/Shipping";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +39,14 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/category/:category" element={<CategoryPage />} />
+            
+            {/* Footer pages */}
+            <Route path="/about" element={<AboutUs />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/shipping" element={<Shipping />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
             
             {/* Auth routes (only for non-authenticated users) */}
             <Route element={<ProtectedRoute requireAuth={false} redirectTo="/" />}>

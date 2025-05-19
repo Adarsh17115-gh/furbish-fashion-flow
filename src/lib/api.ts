@@ -111,7 +111,7 @@ export const fetchUserOrders = async (userId: string) => {
     .order('created_at', { ascending: false });
   
   if (error) throw error;
-  return data as (Order & { product: Product })[];
+  return data as (Order & { product: DatabaseProduct })[];
 };
 
 // Admin only APIs
@@ -125,7 +125,7 @@ export const fetchAllOrders = async () => {
     .order('created_at', { ascending: false });
   
   if (error) throw error;
-  return data as (Order & { product: Product })[];
+  return data as (Order & { product: DatabaseProduct })[];
 };
 
 export const updateOrderStatus = async (id: string, status: Order['status']) => {
