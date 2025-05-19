@@ -7,6 +7,7 @@ import CustomFeaturedCategories from '@/components/CustomFeaturedCategories';
 import ProductGrid from '@/components/ProductGrid';
 import { fetchProducts } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
+import { Product } from '@/data/products';
 
 const Index = () => {
   const { data: womenFeaturedProducts, isLoading: womenLoading } = useQuery({

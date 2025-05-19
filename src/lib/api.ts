@@ -1,6 +1,7 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Product, Order } from '@/types/database';
+import { adaptDatabaseProductsToUI, adaptDatabaseProductToUI } from '@/lib/adapters';
+import { Product as UIProduct } from '@/data/products';
 
 // Product APIs
 export const fetchProducts = async (filters: {
@@ -51,9 +52,11 @@ export const fetchProducts = async (filters: {
     };
   }));
   
-  return productsWithImages as Product[];
+  const dbProducts = productsWithImages as Product[];
+  return adaptDatabaseProductsToUI(dbProducts);
 };
 
+// Update the fetchProductById function to also use the adapter
 export const fetchProductById = async (id: string) => {
   const { data, error } = await supabase
     .from('products')
@@ -74,7 +77,8 @@ export const fetchProductById = async (id: string) => {
       )
     : ['/placeholder.svg'];
   
-  return { ...data, images } as Product;
+  const productWithImages = { ...data, images } as Product;
+  return adaptDatabaseProductToUI(productWithImages);
 };
 
 // Order APIs

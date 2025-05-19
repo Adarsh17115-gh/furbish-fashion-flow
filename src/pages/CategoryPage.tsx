@@ -1,10 +1,9 @@
-
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import ProductGrid from '@/components/ProductGrid';
 import { fetchProducts } from '@/lib/api';
-import { Product } from '@/types/database';
+import { Product } from '@/data/products';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Filter } from 'lucide-react';
@@ -116,7 +115,7 @@ const CategoryPage = () => {
       return b.price - a.price;
     } else {
       // Default to newest
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     }
   }) : [];
   
