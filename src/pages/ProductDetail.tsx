@@ -1,28 +1,29 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import Layout from '@/components/Layout';
+import Layout from '@/components/layout/Layout';
 import { Button } from '@/components/ui/button';
-import { getProductById, Product } from '@/data/products';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { fetchProductById } from '@/lib/api';
+import { useQuery } from '@tanstack/react-query';
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
   const [selectedImage, setSelectedImage] = useState<number>(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const { toast } = useToast();
 
+  const { data: product, isLoading, error } = useQuery({
+    queryKey: ['product', id],
+    queryFn: () => id ? fetchProductById(id) : Promise.reject('No product ID provided'),
+    enabled: !!id
+  });
+  
   useEffect(() => {
     // Scroll to top on page load
     window.scrollTo(0, 0);
-    
-    if (id) {
-      const foundProduct = getProductById(id);
-      setProduct(foundProduct || null);
-      setSelectedSize(null);
-    }
+    setSelectedSize(null);
   }, [id]);
   
   const handlePrevImage = () => {
@@ -58,7 +59,27 @@ const ProductDetail = () => {
     });
   };
   
-  if (!product) {
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="container py-12 flex justify-center">
+          <div className="animate-pulse space-y-6 w-full max-w-4xl">
+            <div className="h-8 bg-muted rounded-md w-1/3"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+              <div className="aspect-square bg-muted rounded-md"></div>
+              <div className="space-y-4">
+                <div className="h-10 bg-muted rounded-md w-2/3"></div>
+                <div className="h-6 bg-muted rounded-md w-1/3"></div>
+                <div className="h-4 bg-muted rounded-md w-full"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+  
+  if (error || !product) {
     return (
       <Layout>
         <div className="container py-12 text-center">

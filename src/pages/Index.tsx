@@ -1,13 +1,12 @@
 
 import { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import Layout from '@/components/Layout';
-import Hero from '@/components/Hero';
-import CustomFeaturedCategories from '@/components/CustomFeaturedCategories';
-import ProductGrid from '@/components/ProductGrid';
+import Layout from '@/components/layout/Layout';
+import Hero from '@/components/marketing/Hero';
+import CustomFeaturedCategories from '@/components/categories/CustomFeaturedCategories';
+import ProductGrid from '@/components/products/ProductGrid';
 import { fetchProducts } from '@/lib/api';
 import { Loader2 } from 'lucide-react';
-import { Product } from '@/data/products';
 
 const Index = () => {
   const { data: womenFeaturedProducts, isLoading: womenLoading } = useQuery({

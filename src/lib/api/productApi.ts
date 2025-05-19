@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Product as DatabaseProduct, Order } from '@/types/database';
+import { Product as DatabaseProduct } from '@/types/database';
 import { adaptDatabaseProductsToUI, adaptDatabaseProductToUI } from '@/lib/adapters';
 import { Product as UIProduct } from '@/data/products';
 
@@ -10,7 +10,6 @@ type StorageResponse = {
   error: Error | null;
 };
 
-// Product APIs
 export const fetchProducts = async (filters: {
   category?: string;
   subcategory?: string;
@@ -64,7 +63,6 @@ export const fetchProducts = async (filters: {
   return adaptDatabaseProductsToUI(dbProducts);
 };
 
-// Update the fetchProductById function to also use the adapter
 export const fetchProductById = async (id: string): Promise<UIProduct> => {
   const { data, error } = await supabase
     .from('products')
@@ -86,64 +84,6 @@ export const fetchProductById = async (id: string): Promise<UIProduct> => {
   
   const productWithImages = { ...data, images } as DatabaseProduct;
   return adaptDatabaseProductToUI(productWithImages);
-};
-
-// Order APIs
-export const createOrder = async (order: Omit<Order, 'id' | 'created_at' | 'updated_at'>) => {
-  // Ensure the status is properly typed
-  const orderWithTypedStatus = {
-    ...order,
-    status: order.status as Order['status'] // Cast to the proper union type
-  };
-
-  const { data, error } = await supabase
-    .from('orders')
-    .insert(orderWithTypedStatus)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as Order;
-};
-
-export const fetchUserOrders = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      product:product_id (*)
-    `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
-  
-  if (error) throw error;
-  return data as (Order & { product: DatabaseProduct })[];
-};
-
-// Admin only APIs
-export const fetchAllOrders = async () => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      product:product_id (*)
-    `)
-    .order('created_at', { ascending: false });
-  
-  if (error) throw error;
-  return data as (Order & { product: DatabaseProduct })[];
-};
-
-export const updateOrderStatus = async (id: string, status: Order['status']) => {
-  const { data, error } = await supabase
-    .from('orders')
-    .update({ status })
-    .eq('id', id)
-    .select()
-    .single();
-  
-  if (error) throw error;
-  return data as Order;
 };
 
 export const addProduct = async (product: Omit<DatabaseProduct, 'id' | 'created_at' | 'updated_at'>) => {
@@ -179,7 +119,6 @@ export const deleteProduct = async (id: string) => {
   return true;
 };
 
-// Helper to upload product images
 export const uploadProductImage = async (productId: string, file: File) => {
   const fileExt = file.name.split('.').pop();
   const fileName = `${Date.now()}.${fileExt}`;
@@ -192,18 +131,4 @@ export const uploadProductImage = async (productId: string, file: File) => {
   if (error) throw error;
   
   return `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${filePath}`;
-};
-
-// Helper to upload payment proof
-export const uploadPaymentProof = async (orderId: string, file: File) => {
-  const fileExt = file.name.split('.').pop();
-  const fileName = `${orderId}_${Date.now()}.${fileExt}`;
-  
-  const { error } = await supabase.storage
-    .from('payment-proofs')
-    .upload(fileName, file);
-  
-  if (error) throw error;
-  
-  return fileName;
 };
