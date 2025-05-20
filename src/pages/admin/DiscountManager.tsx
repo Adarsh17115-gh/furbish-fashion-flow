@@ -44,6 +44,23 @@ import {
 import { Plus, Edit, Trash2, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 
+// Define discount type to ensure proper typing
+type DiscountType = "percentage" | "fixed";
+
+// Define discount interface
+interface Discount {
+  id: string;
+  code: string;
+  type: DiscountType;
+  value: number;
+  minPurchase: number;
+  maxUses: number | null;
+  usedCount: number;
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+}
+
 // Define form validation schema
 const discountFormSchema = z.object({
   code: z.string().min(3, "Code must be at least 3 characters"),
@@ -59,7 +76,7 @@ const discountFormSchema = z.object({
 type DiscountFormValues = z.infer<typeof discountFormSchema>;
 
 // Sample discount data
-const mockDiscounts = [
+const mockDiscounts: Discount[] = [
   {
     id: '1',
     code: 'SUMMER25',
@@ -101,9 +118,9 @@ const mockDiscounts = [
 const DiscountManager = () => {
   const { isAdmin } = useAuth();
   const { toast } = useToast();
-  const [discounts, setDiscounts] = useState(mockDiscounts);
+  const [discounts, setDiscounts] = useState<Discount[]>(mockDiscounts);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingDiscount, setEditingDiscount] = useState<typeof mockDiscounts[0] | null>(null);
+  const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
   
   const form = useForm<DiscountFormValues>({
     resolver: zodResolver(discountFormSchema),
@@ -126,10 +143,15 @@ const DiscountManager = () => {
       const updatedDiscounts = discounts.map(discount => 
         discount.id === editingDiscount.id 
           ? { 
-              ...discount, 
-              ...values,
+              ...editingDiscount,
+              code: values.code,
+              type: values.type,
+              value: values.value,
+              minPurchase: values.minPurchase || 0,
+              maxUses: values.maxUses || null,
               startDate: new Date(values.startDate),
               endDate: new Date(values.endDate),
+              isActive: values.isActive,
             } 
           : discount
       );
@@ -140,12 +162,17 @@ const DiscountManager = () => {
       });
     } else {
       // Add new discount
-      const newDiscount = {
+      const newDiscount: Discount = {
         id: Math.random().toString(36).substring(7),
-        ...values,
+        code: values.code,
+        type: values.type,
+        value: values.value,
+        minPurchase: values.minPurchase || 0,
+        maxUses: values.maxUses || null,
+        usedCount: 0,
         startDate: new Date(values.startDate),
         endDate: new Date(values.endDate),
-        usedCount: 0,
+        isActive: values.isActive,
       };
       setDiscounts([...discounts, newDiscount]);
       toast({
@@ -160,7 +187,7 @@ const DiscountManager = () => {
   };
   
   // Handle edit discount
-  const handleEditDiscount = (discount: typeof mockDiscounts[0]) => {
+  const handleEditDiscount = (discount: Discount) => {
     setEditingDiscount(discount);
     form.reset({
       code: discount.code,

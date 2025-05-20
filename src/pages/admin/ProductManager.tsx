@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,20 @@ import {
 import { Loader2, Plus, Search, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Product } from '@/types/database';
 
+// Define the form data interface based on the Product type
+interface ProductFormData {
+  title: string;
+  description: string;
+  price: string;
+  original_price: string;
+  category: string;
+  brand: string;
+  condition: string;
+  sizes: string[];
+  is_visible: boolean;
+  is_featured: boolean;
+}
+
 const ProductManager = () => {
   const { isAdmin } = useAuth();
   const { toast } = useToast();
@@ -46,7 +59,7 @@ const ProductManager = () => {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ProductFormData>({
     title: '',
     description: '',
     price: '',
@@ -149,7 +162,8 @@ const ProductManager = () => {
       ...formData,
       price: parseFloat(formData.price),
       original_price: formData.original_price ? parseFloat(formData.original_price) : null,
-      seller_info: { name: "FurbishStudios", rating: 5.0 } // Add required fields
+      seller_info: { name: "FurbishStudios", rating: 5.0 },
+      seller_id: null // Add seller_id as null since it's required by the type but optional in the database
     };
     
     if (editingProduct) {
@@ -158,7 +172,7 @@ const ProductManager = () => {
         updates: productData,
       });
     } else {
-      addProductMutation.mutate(productData);
+      addProductMutation.mutate(productData as Omit<Product, "id" | "created_at" | "updated_at">);
     }
   };
   
@@ -169,7 +183,7 @@ const ProductManager = () => {
   };
   
   // Convert database product to UI format
-  const mapProductToForm = (product: any) => {
+  const mapProductToForm = (product: any): ProductFormData => {
     return {
       title: product.name || product.title || '',
       description: product.description || '',
@@ -209,6 +223,7 @@ const ProductManager = () => {
               </DialogHeader>
               
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Product form fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="title">Product Name *</Label>
@@ -414,8 +429,9 @@ const ProductManager = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
+                            const formData = mapProductToForm(product);
+                            setFormData(formData);
                             setEditingProduct(product);
-                            setFormData(mapProductToForm(product));
                             setShowAddDialog(true);
                           }}
                         >

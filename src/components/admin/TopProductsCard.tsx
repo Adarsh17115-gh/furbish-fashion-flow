@@ -16,7 +16,7 @@ export const TopProductsCard = () => {
   // In a real application, this would be based on order data to find actual top-selling products
   // For now, we'll just display featured products as a placeholder
   const topProducts = products
-    ?.filter(product => product.featured)
+    ?.filter(product => product.featured || product.is_featured)
     ?.slice(0, 5) || [];
     
   return (
@@ -40,12 +40,12 @@ export const TopProductsCard = () => {
                 <div className="w-12 h-12 rounded-md overflow-hidden border">
                   <img 
                     src={product.images?.[0] || '/placeholder.svg'} 
-                    alt={product.name}
+                    alt={product.name || product.title} 
                     className="w-full h-full object-cover" 
                   />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm">{product.name}</h4>
+                  <h4 className="font-medium text-sm">{product.name || product.title}</h4>
                   <p className="text-xs text-muted-foreground">${product.price}</p>
                 </div>
                 <div className="text-right">
