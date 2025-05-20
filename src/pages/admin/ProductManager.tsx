@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -36,9 +35,7 @@ import {
 import { Loader2, Plus, Search, Edit, Trash2, Eye, EyeOff, UploadCloud } from 'lucide-react';
 import { Product as DatabaseProduct } from '@/types/database';
 import { Product as UIProduct } from '@/data/products';
-
-// Define a type that represents any product (DB or UI)
-type AnyProduct = DatabaseProduct | UIProduct;
+import { AdminProduct } from '@/types/admin';
 
 // Define the form data interface based on the Product type
 interface ProductFormData {
@@ -62,7 +59,7 @@ const ProductManager = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<AnyProduct | null>(null);
+  const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
@@ -218,7 +215,7 @@ const ProductManager = () => {
   };
   
   // Convert product to form data format
-  const mapProductToForm = (product: AnyProduct): ProductFormData => {
+  const mapProductToForm = (product: AdminProduct): ProductFormData => {
     return {
       title: getProductName(product),
       description: product.description || '',
@@ -235,25 +232,25 @@ const ProductManager = () => {
   };
   
   // Helper functions for handling different product types
-  function getProductName(product: AnyProduct): string {
+  function getProductName(product: AdminProduct): string {
     if ('name' in product) return product.name;
     if ('title' in product) return product.title;
     return 'Untitled Product';
   }
   
-  function getProductOriginalPrice(product: AnyProduct): string {
+  function getProductOriginalPrice(product: AdminProduct): string {
     if ('originalPrice' in product && product.originalPrice) return product.originalPrice.toString();
     if ('original_price' in product && product.original_price) return product.original_price.toString();
     return '';
   }
   
-  function getProductVisibility(product: AnyProduct): boolean {
+  function getProductVisibility(product: AdminProduct): boolean {
     if ('inStock' in product) return product.inStock;
     if ('is_visible' in product) return product.is_visible;
     return true;
   }
   
-  function getProductFeatured(product: AnyProduct): boolean {
+  function getProductFeatured(product: AdminProduct): boolean {
     if ('featured' in product) return product.featured;
     if ('is_featured' in product) return product.is_featured;
     return false;
@@ -491,7 +488,10 @@ const ProductManager = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {products.map((product) => (
+                {products.filter(product => 
+                  searchTerm === '' || 
+                  getProductName(product).toLowerCase().includes(searchTerm.toLowerCase())
+                ).map((product) => (
                   <TableRow key={product.id}>
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -512,8 +512,7 @@ const ProductManager = () => {
                     <TableCell>
                       <div>
                         <p className="font-medium">${product.price}</p>
-                        {(('originalPrice' in product && product.originalPrice) || 
-                          ('original_price' in product && product.original_price)) && (
+                        {('originalPrice' in product && product.originalPrice || 'original_price' in product && product.original_price) && (
                           <p className="text-sm text-muted-foreground line-through">
                             ${('originalPrice' in product) ? product.originalPrice : product.original_price}
                           </p>

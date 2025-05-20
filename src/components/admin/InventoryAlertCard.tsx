@@ -7,9 +7,8 @@ import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Product } from '@/types/database';
 import { Product as UIProduct } from '@/data/products';
-
-// Define a type that represents any product (DB or UI)
-type AnyProduct = Product | UIProduct;
+import { getProductName } from '@/lib/adapters';
+import { AdminProduct } from '@/types/admin';
 
 export const InventoryAlertCard = () => {
   const navigate = useNavigate();
@@ -75,10 +74,3 @@ export const InventoryAlertCard = () => {
     </Card>
   );
 };
-
-// Helper functions for handling different product types
-function getProductName(product: AnyProduct): string {
-  if ('name' in product) return product.name;
-  if ('title' in product) return product.title;
-  return 'Untitled Product';
-}

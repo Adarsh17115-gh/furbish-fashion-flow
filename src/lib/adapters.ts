@@ -1,6 +1,7 @@
 
 import { Product as DatabaseProduct } from '@/types/database';
 import { Product as UIProduct } from '@/data/products';
+import { AdminProduct } from '@/types/admin';
 
 /**
  * Converts a database product to the UI product format
@@ -41,8 +42,35 @@ export const adaptDatabaseProductsToUI = (products: DatabaseProduct[]): UIProduc
 /**
  * Helper function to get a consistent product name regardless of product type
  */
-export const getProductName = (product: DatabaseProduct | UIProduct): string => {
+export const getProductName = (product: DatabaseProduct | UIProduct | AdminProduct): string => {
   if ('name' in product) return product.name;
   if ('title' in product) return product.title;
   return 'Untitled Product';
+};
+
+/**
+ * Helper function to get original price regardless of product type
+ */
+export const getProductOriginalPrice = (product: DatabaseProduct | UIProduct | AdminProduct): string => {
+  if ('originalPrice' in product && product.originalPrice) return product.originalPrice.toString();
+  if ('original_price' in product && product.original_price) return product.original_price.toString();
+  return '';
+};
+
+/**
+ * Helper function to get product visibility status
+ */
+export const getProductVisibility = (product: DatabaseProduct | UIProduct | AdminProduct): boolean => {
+  if ('inStock' in product) return product.inStock;
+  if ('is_visible' in product) return product.is_visible;
+  return true;
+};
+
+/**
+ * Helper function to check if a product is featured
+ */
+export const getProductFeatured = (product: DatabaseProduct | UIProduct | AdminProduct): boolean => {
+  if ('featured' in product) return product.featured;
+  if ('is_featured' in product) return product.is_featured;
+  return false;
 };

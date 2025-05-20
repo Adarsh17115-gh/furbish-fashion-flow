@@ -4,11 +4,7 @@ import { fetchProducts } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Product } from '@/types/database';
-import { Product as UIProduct } from '@/data/products';
-
-// Define a type that represents any product (DB or UI)
-type AnyProduct = Product | UIProduct;
+import { getProductName, getProductFeatured } from '@/lib/adapters';
 
 export const TopProductsCard = () => {
   const navigate = useNavigate();
@@ -18,13 +14,9 @@ export const TopProductsCard = () => {
     queryFn: () => fetchProducts({}),
   });
   
-  // In a real application, this would be based on order data to find actual top-selling products
-  // For now, we'll just display featured products as a placeholder
+  // Simulate top products (in a real app you would have actual sales data)
   const topProducts = products
-    ?.filter(product => {
-      // Handle both UI and DB product types
-      return 'featured' in product ? product.featured : 'is_featured' in product ? product.is_featured : false;
-    })
+    ?.filter(product => getProductFeatured(product))
     ?.slice(0, 5) || [];
     
   return (
@@ -48,38 +40,26 @@ export const TopProductsCard = () => {
                 <div className="w-12 h-12 rounded-md overflow-hidden border">
                   <img 
                     src={product.images?.[0] || '/placeholder.svg'} 
-                    alt={getProductName(product)} 
+                    alt={getProductName(product)}
                     className="w-full h-full object-cover" 
                   />
                 </div>
                 <div className="flex-1">
                   <h4 className="font-medium text-sm">{getProductName(product)}</h4>
-                  <p className="text-xs text-muted-foreground">${product.price}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-medium">{product.category}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{getProductCondition(product)}</p>
+                  <div className="flex justify-between">
+                    <p className="text-sm text-muted-foreground">{product.category}</p>
+                    <p className="font-medium">${product.price}</p>
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="py-8 text-center text-muted-foreground">
-            <p>No featured products found</p>
+            <p>No top products data available</p>
           </div>
         )}
       </CardContent>
     </Card>
   );
 };
-
-// Helper functions for handling different product types
-function getProductName(product: AnyProduct): string {
-  if ('name' in product) return product.name;
-  if ('title' in product) return product.title;
-  return 'Untitled Product';
-}
-
-function getProductCondition(product: AnyProduct): string {
-  return product.condition || 'New';
-}
