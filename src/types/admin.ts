@@ -2,31 +2,38 @@
 import { Product as DatabaseProduct } from '@/types/database';
 import { Product as UIProduct } from '@/data/products';
 
-// Combined product type for admin interfaces
+// Union type for products that can be displayed in admin interfaces
 export type AdminProduct = DatabaseProduct | UIProduct;
 
-// Discount type definition
-export interface Discount {
-  id: string;
-  code: string;
-  type: 'fixed' | 'percentage';
-  value: number;
-  minPurchase: number;
-  maxUses: number;
-  usedCount: number; 
-  startDate: Date;
-  endDate: Date;
-  isActive: boolean;
+export interface ProductFilter {
+  category?: string;
+  subcategory?: string;
+  featured?: boolean;
+  search?: string;
+  limit?: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+  inStock?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
-// Form type for discount creation/editing
-export interface DiscountFormData {
-  code: string;
-  type: 'fixed' | 'percentage';
-  value: number;
-  minPurchase: number;
-  maxUses: number;
-  startDate: Date;
-  endDate: Date;
-  isActive: boolean;
+export interface ProductStock {
+  id: string;
+  name: string;
+  inStock: boolean;
+  lowStock?: boolean;
+  stockLevel?: number;
+}
+
+export interface SalesData {
+  date: string;
+  amount: number;
+}
+
+export interface TopProduct {
+  id: string;
+  name: string;
+  sales: number;
+  revenue: number;
 }

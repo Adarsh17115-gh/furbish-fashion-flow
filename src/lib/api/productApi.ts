@@ -16,6 +16,11 @@ export const fetchProducts = async (filters: {
   featured?: boolean;
   search?: string;
   limit?: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+  inStock?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
 } = {}): Promise<UIProduct[]> => {
   let query = supabase.from('products')
     .select('*');
@@ -30,6 +35,27 @@ export const fetchProducts = async (filters: {
 
   if (filters.search) {
     query = query.ilike('title', `%${filters.search}%`);
+  }
+  
+  if (filters.inStock !== undefined) {
+    query = query.eq('is_visible', filters.inStock);
+  }
+  
+  if (filters.minPrice !== undefined) {
+    query = query.gte('price', filters.minPrice);
+  }
+  
+  if (filters.maxPrice !== undefined) {
+    query = query.lte('price', filters.maxPrice);
+  }
+  
+  // Apply sorting
+  if (filters.sortBy) {
+    const direction = filters.sortDirection || 'asc';
+    query = query.order(filters.sortBy, { ascending: direction === 'asc' });
+  } else {
+    // Default sort by created_at (newest first)
+    query = query.order('created_at', { ascending: false });
   }
   
   if (filters.limit) {
@@ -110,6 +136,19 @@ export const updateProduct = async (id: string, updates: Partial<DatabaseProduct
 };
 
 export const deleteProduct = async (id: string) => {
+  // First, delete all images from storage
+  const { data: imageList } = await supabase.storage
+    .from('product-images')
+    .list(id);
+  
+  if (imageList && imageList.length > 0) {
+    const imagePaths = imageList.map(file => `${id}/${file.name}`);
+    await supabase.storage
+      .from('product-images')
+      .remove(imagePaths);
+  }
+  
+  // Then delete the product
   const { error } = await supabase
     .from('products')
     .delete()

@@ -1,99 +1,72 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchProducts, addProduct, updateProduct, deleteProduct, uploadProductImage } from '@/lib/api';
+import { 
+  fetchProducts, 
+  addProduct, 
+  updateProduct, 
+  deleteProduct, 
+  uploadProductImage,
+  deleteProductImage 
+} from '@/lib/api';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
   TableCaption,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Plus, Search, Edit, Trash2, Eye, EyeOff, UploadCloud } from 'lucide-react';
+import { Plus, Loader2 } from 'lucide-react';
 import { Product as DatabaseProduct } from '@/types/database';
-import { Product as UIProduct } from '@/data/products';
 import { AdminProduct } from '@/types/admin';
-import { getProductName, getProductOriginalPrice, getProductVisibility, getProductFeatured } from '@/lib/adapters';
-
-// Define the form data interface based on the Product type
-interface ProductFormData {
-  title: string;
-  description: string;
-  price: string;
-  original_price: string;
-  category: string;
-  brand: string;
-  condition: string;
-  sizes: string[];
-  is_visible: boolean;
-  is_featured: boolean;
-  images?: string[];
-}
+import ProductFilters from '@/components/admin/ProductFilters';
+import ProductListItem from '@/components/admin/ProductListItem';
+import ProductForm from '@/components/admin/ProductForm';
 
 const ProductManager = () => {
   const { isAdmin } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
-  const [searchTerm, setSearchTerm] = useState('');
+  // State
+  const [filters, setFilters] = useState({});
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<AdminProduct | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
-  // Form state
-  const [formData, setFormData] = useState<ProductFormData>({
-    title: '',
-    description: '',
-    price: '',
-    original_price: '',
-    category: '',
-    brand: '',
-    condition: 'new',
-    sizes: [] as string[],
-    is_visible: true,
-    is_featured: false,
-    images: []
-  });
-  
-  // Fetch products
+  // Queries
   const { data: products, isLoading } = useQuery({
-    queryKey: ['admin', 'products'],
-    queryFn: () => fetchProducts({}),
+    queryKey: ['admin', 'products', filters],
+    queryFn: () => fetchProducts(filters),
   });
   
-  // Add product mutation
+  // Mutations
   const addProductMutation = useMutation({
-    mutationFn: async (productData: Omit<DatabaseProduct, "id" | "created_at" | "updated_at">) => {
-      const product = await addProduct(productData);
+    mutationFn: async (productData: {
+      data: Omit<DatabaseProduct, "id" | "created_at" | "updated_at">,
+      images: File[]
+    }) => {
+      // First add the product
+      const product = await addProduct(productData.data);
       
-      // If there's a selected file, upload it
-      if (selectedFile && product.id) {
-        await uploadProductImage(product.id, selectedFile);
+      // Then upload all images
+      if (productData.images.length > 0) {
+        setIsUploading(true);
+        await Promise.all(
+          productData.images.map(file => uploadProductImage(product.id, file))
+        );
+        setIsUploading(false);
       }
       
       return product;
@@ -101,14 +74,13 @@ const ProductManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
       setShowAddDialog(false);
-      resetForm();
-      setSelectedFile(null);
       toast({
         title: "Product Added",
         description: "The product has been successfully added.",
       });
     },
     onError: (error) => {
+      setIsUploading(false);
       toast({
         title: "Error",
         description: "Failed to add product. Please try again.",
@@ -119,12 +91,25 @@ const ProductManager = () => {
   
   // Update product mutation
   const updateProductMutation = useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<DatabaseProduct> }) => {
+    mutationFn: async ({ 
+      id, 
+      updates, 
+      newImages 
+    }: { 
+      id: string; 
+      updates: Partial<DatabaseProduct>; 
+      newImages: File[] 
+    }) => {
+      // First update the product data
       const product = await updateProduct(id, updates);
       
-      // If there's a selected file, upload it
-      if (selectedFile) {
-        await uploadProductImage(id, selectedFile);
+      // Then upload any new images
+      if (newImages.length > 0) {
+        setIsUploading(true);
+        await Promise.all(
+          newImages.map(file => uploadProductImage(id, file))
+        );
+        setIsUploading(false);
       }
       
       return product;
@@ -132,14 +117,14 @@ const ProductManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
       setEditingProduct(null);
-      resetForm();
-      setSelectedFile(null);
+      setShowAddDialog(false);
       toast({
         title: "Product Updated",
         description: "The product has been successfully updated.",
       });
     },
     onError: (error) => {
+      setIsUploading(false);
       toast({
         title: "Error",
         description: "Failed to update product. Please try again.",
@@ -167,71 +152,88 @@ const ProductManager = () => {
     },
   });
   
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      price: '',
-      original_price: '',
-      category: '',
-      brand: '',
-      condition: 'new',
-      sizes: [],
-      is_visible: true,
-      is_featured: false,
-      images: []
-    });
+  // Delete image mutation
+  const deleteImageMutation = useMutation({
+    mutationFn: ({ productId, imageUrl }: { productId: string, imageUrl: string }) => {
+      return deleteProductImage(productId, imageUrl);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
+      toast({
+        title: "Image Deleted",
+        description: "The image has been successfully deleted.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error",
+        description: "Failed to delete image. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+  
+  // Handle filter changes
+  const handleFilterChange = (newFilters: any) => {
+    setFilters(newFilters);
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // Handle form submit
+  const handleProductFormSubmit = (formData: any, newImages: File[]) => {
+    // Convert form data to match database structure
     const productData = {
       ...formData,
       price: parseFloat(formData.price),
       original_price: formData.original_price ? parseFloat(formData.original_price) : null,
       seller_info: { name: "FurbishStudios", rating: 5.0 },
-      seller_id: null // Add seller_id as null since it's required by the type but optional in the database
+      seller_id: null
     };
     
     if (editingProduct) {
       updateProductMutation.mutate({
         id: editingProduct.id,
         updates: productData,
+        newImages
       });
     } else {
-      addProductMutation.mutate(productData as Omit<DatabaseProduct, "id" | "created_at" | "updated_at">);
+      addProductMutation.mutate({ 
+        data: productData as Omit<DatabaseProduct, "id" | "created_at" | "updated_at">,
+        images: newImages
+      });
     }
   };
   
-  const handleDelete = async (id: string) => {
+  // Handle image delete
+  const handleDeleteImage = (imageUrl: string) => {
+    if (editingProduct) {
+      deleteImageMutation.mutate({
+        productId: editingProduct.id,
+        imageUrl: imageUrl
+      });
+    }
+  };
+  
+  // Handle delete product
+  const handleDeleteProduct = (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       deleteProductMutation.mutate(id);
     }
   };
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
+  // Handle toggle visibility
+  const handleToggleVisibility = (id: string, isVisible: boolean) => {
+    updateProductMutation.mutate({
+      id,
+      updates: { is_visible: !isVisible },
+      newImages: []
+    });
   };
   
-  // Convert product to form data format
-  const mapProductToForm = (product: AdminProduct): ProductFormData => {
-    return {
-      title: getProductName(product),
-      description: product.description || '',
-      price: product.price.toString(),
-      original_price: getProductOriginalPrice(product),
-      category: product.category || '',
-      brand: product.brand || '',
-      condition: product.condition || 'new',
-      sizes: product.sizes || [],
-      is_visible: getProductVisibility(product),
-      is_featured: getProductFeatured(product),
-      images: product.images || []
-    };
-  };
+  // Calculate max price for filter range
+  const maxPrice = products?.reduce(
+    (max, product) => Math.max(max, product.price || 0), 
+    0
+  ) || 1000;
   
   if (!isAdmin) {
     return null;
@@ -240,213 +242,22 @@ const ProductManager = () => {
   return (
     <Layout>
       <div className="container py-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-serif">Product Manager</h1>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add New Product
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
-                <DialogDescription>
-                  Fill in the product details below. All fields marked with * are required.
-                </DialogDescription>
-              </DialogHeader>
-              
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Product form fields */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Product Name *</Label>
-                    <Input
-                      id="title"
-                      value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="brand">Brand</Label>
-                    <Input
-                      id="brand"
-                      value={formData.brand}
-                      onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                    />
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <textarea
-                    id="description"
-                    className="w-full min-h-[100px] p-2 border rounded-md"
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      step="0.01"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="original_price">Original Price</Label>
-                    <Input
-                      id="original_price"
-                      type="number"
-                      step="0.01"
-                      value={formData.original_price}
-                      onChange={(e) => setFormData({ ...formData, original_price: e.target.value })}
-                    />
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="category">Category *</Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="women">Women's Clothing</SelectItem>
-                        <SelectItem value="watches">Watches</SelectItem>
-                        <SelectItem value="accessories">Accessories</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="condition">Condition *</Label>
-                    <Select
-                      value={formData.condition}
-                      onValueChange={(value) => setFormData({ ...formData, condition: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select condition" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="new">New</SelectItem>
-                        <SelectItem value="like new">Like New</SelectItem>
-                        <SelectItem value="good">Good</SelectItem>
-                        <SelectItem value="fair">Fair</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {/* Image Upload */}
-                <div className="space-y-2">
-                  <Label htmlFor="image">Product Image {!editingProduct && '*'}</Label>
-                  <div className="border rounded-md p-4">
-                    <div className="flex items-center gap-4">
-                      {selectedFile ? (
-                        <div className="w-20 h-20 border rounded-md overflow-hidden">
-                          <img 
-                            src={URL.createObjectURL(selectedFile)} 
-                            alt="Product preview" 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ) : formData.images && formData.images.length > 0 ? (
-                        <div className="w-20 h-20 border rounded-md overflow-hidden">
-                          <img 
-                            src={formData.images[0]} 
-                            alt="Current product" 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <div className="w-20 h-20 border rounded-md flex items-center justify-center bg-muted">
-                          <UploadCloud className="w-8 h-8 text-muted-foreground" />
-                        </div>
-                      )}
-                      
-                      <div className="flex-1">
-                        <Input
-                          id="image"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFileChange}
-                          required={!editingProduct && (!formData.images || formData.images.length === 0)}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Upload a product image. Maximum size: 5MB
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setShowAddDialog(false);
-                      setEditingProduct(null);
-                      resetForm();
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    type="submit" 
-                    disabled={addProductMutation.isPending || updateProductMutation.isPending || isUploading}
-                  >
-                    {(addProductMutation.isPending || updateProductMutation.isPending) && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    {editingProduct ? 'Update Product' : 'Add Product'}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-serif">Product Manager</h1>
+            <p className="text-muted-foreground">
+              Manage your products inventory
+            </p>
+          </div>
+          <Button onClick={() => setShowAddDialog(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Product
+          </Button>
         </div>
         
         <div className="bg-white rounded-lg border shadow-sm">
           <div className="p-4 border-b">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search products..."
-                  className="pl-8"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              
-              <Select defaultValue="all">
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filter by category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="women">Women's Clothing</SelectItem>
-                  <SelectItem value="watches">Watches</SelectItem>
-                  <SelectItem value="accessories">Accessories</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <ProductFilters onFilterChange={handleFilterChange} maxPrice={maxPrice} />
           </div>
           
           {isLoading ? (
@@ -454,113 +265,68 @@ const ProductManager = () => {
               <Loader2 className="h-8 w-8 animate-spin text-terracotta" />
             </div>
           ) : products && products.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Product</TableHead>
-                  <TableHead>Category</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {products.filter(product => 
-                  searchTerm === '' || 
-                  getProductName(product).toLowerCase().includes(searchTerm.toLowerCase())
-                ).map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-md border overflow-hidden">
-                          <img
-                            src={product.images?.[0] || '/placeholder.svg'}
-                            alt={getProductName(product)}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <p className="font-medium">{getProductName(product)}</p>
-                          <p className="text-sm text-muted-foreground">{product.brand}</p>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{product.category}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">${product.price}</p>
-                        {getProductOriginalPrice(product) && (
-                          <p className="text-sm text-muted-foreground line-through">
-                            ${getProductOriginalPrice(product)}
-                          </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {getProductVisibility(product) ? (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                          Hidden
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const formData = mapProductToForm(product);
-                            setFormData(formData);
-                            setEditingProduct(product);
-                            setShowAddDialog(true);
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(product.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const isVisible = getProductVisibility(product);
-                            
-                            updateProductMutation.mutate({
-                              id: product.id,
-                              updates: { 
-                                is_visible: !isVisible 
-                              },
-                            });
-                          }}
-                        >
-                          {getProductVisibility(product) ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead>Price</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Sizes</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product) => (
+                    <ProductListItem 
+                      key={product.id}
+                      product={product}
+                      onEdit={(product) => {
+                        setEditingProduct(product);
+                        setShowAddDialog(true);
+                      }}
+                      onDelete={handleDeleteProduct}
+                      onToggleVisibility={handleToggleVisibility}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           ) : (
             <div className="text-center py-8">
               <p className="text-muted-foreground">No products found</p>
+              <Button
+                variant="outline"
+                className="mt-4"
+                onClick={() => setShowAddDialog(true)}
+              >
+                Add your first product
+              </Button>
             </div>
           )}
         </div>
       </div>
+      
+      {/* Product Dialog */}
+      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingProduct ? 'Edit Product' : 'Add New Product'}</DialogTitle>
+          </DialogHeader>
+          
+          <ProductForm
+            product={editingProduct || undefined}
+            onSubmit={handleProductFormSubmit}
+            onCancel={() => {
+              setShowAddDialog(false);
+              setEditingProduct(null);
+            }}
+            onDeleteImage={handleDeleteImage}
+            isSubmitting={addProductMutation.isPending || updateProductMutation.isPending || isUploading}
+          />
+        </DialogContent>
+      </Dialog>
     </Layout>
   );
 };
