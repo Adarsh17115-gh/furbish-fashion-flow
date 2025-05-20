@@ -86,10 +86,10 @@ export const fetchProductById = async (id: string): Promise<UIProduct> => {
   return adaptDatabaseProductToUI(productWithImages);
 };
 
-export const addProduct = async (product: Omit<DatabaseProduct, 'id' | 'created_at' | 'updated_at'>) => {
+export const addProduct = async (productData: Omit<DatabaseProduct, 'id' | 'created_at' | 'updated_at'>) => {
   const { data, error } = await supabase
     .from('products')
-    .insert(product)
+    .insert(productData)
     .select()
     .single();
   

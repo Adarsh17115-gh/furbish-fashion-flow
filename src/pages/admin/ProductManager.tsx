@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -148,6 +149,7 @@ const ProductManager = () => {
       ...formData,
       price: parseFloat(formData.price),
       original_price: formData.original_price ? parseFloat(formData.original_price) : null,
+      seller_info: { name: "FurbishStudios", rating: 5.0 } // Add required fields
     };
     
     if (editingProduct) {
@@ -164,6 +166,22 @@ const ProductManager = () => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       deleteProductMutation.mutate(id);
     }
+  };
+  
+  // Convert database product to UI format
+  const mapProductToForm = (product: any) => {
+    return {
+      title: product.name || product.title || '',
+      description: product.description || '',
+      price: (product.price || 0).toString(),
+      original_price: (product.originalPrice || product.original_price || '').toString(),
+      category: product.category || '',
+      brand: product.brand || '',
+      condition: product.condition || 'new',
+      sizes: product.sizes || [],
+      is_visible: product.inStock !== undefined ? product.inStock : (product.is_visible || true),
+      is_featured: product.featured !== undefined ? product.featured : (product.is_featured || false),
+    };
   };
   
   if (!isAdmin) {
@@ -358,12 +376,12 @@ const ProductManager = () => {
                         <div className="w-10 h-10 rounded-md border overflow-hidden">
                           <img
                             src={product.images?.[0] || '/placeholder.svg'}
-                            alt={product.title}
+                            alt={product.name}
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div>
-                          <p className="font-medium">{product.title}</p>
+                          <p className="font-medium">{product.name}</p>
                           <p className="text-sm text-muted-foreground">{product.brand}</p>
                         </div>
                       </div>
@@ -372,15 +390,15 @@ const ProductManager = () => {
                     <TableCell>
                       <div>
                         <p className="font-medium">${product.price}</p>
-                        {product.original_price && (
+                        {product.originalPrice && (
                           <p className="text-sm text-muted-foreground line-through">
-                            ${product.original_price}
+                            ${product.originalPrice}
                           </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      {product.is_visible ? (
+                      {product.inStock ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Active
                         </span>
@@ -397,18 +415,7 @@ const ProductManager = () => {
                           size="sm"
                           onClick={() => {
                             setEditingProduct(product);
-                            setFormData({
-                              title: product.title,
-                              description: product.description || '',
-                              price: product.price.toString(),
-                              original_price: product.original_price?.toString() || '',
-                              category: product.category,
-                              brand: product.brand || '',
-                              condition: product.condition,
-                              sizes: product.sizes,
-                              is_visible: product.is_visible,
-                              is_featured: product.is_featured,
-                            });
+                            setFormData(mapProductToForm(product));
                             setShowAddDialog(true);
                           }}
                         >
@@ -427,11 +434,11 @@ const ProductManager = () => {
                           onClick={() => {
                             updateProductMutation.mutate({
                               id: product.id,
-                              updates: { is_visible: !product.is_visible },
+                              updates: { is_visible: !product.inStock },
                             });
                           }}
                         >
-                          {product.is_visible ? (
+                          {product.inStock ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />

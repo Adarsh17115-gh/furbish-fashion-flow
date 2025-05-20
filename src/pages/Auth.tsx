@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Layout from '@/components/Layout';
 import { Loader2 } from 'lucide-react';
 
@@ -23,7 +24,8 @@ const Auth = () => {
   const [registerData, setRegisterData] = useState({
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: 'buyer' as 'buyer' | 'admin'
   });
 
   // Handle login form submission
@@ -43,7 +45,7 @@ const Auth = () => {
     }
     
     setIsLoading(true);
-    await signUp(registerData.email, registerData.password, 'buyer');
+    await signUp(registerData.email, registerData.password, registerData.role);
     setIsLoading(false);
   };
 
@@ -138,6 +140,23 @@ const Auth = () => {
                       onChange={(e) => setRegisterData({...registerData, confirmPassword: e.target.value})}
                       required
                     />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Account Type</Label>
+                    <RadioGroup 
+                      value={registerData.role} 
+                      onValueChange={(value) => setRegisterData({...registerData, role: value as 'buyer' | 'admin'})}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="buyer" id="buyer" />
+                        <Label htmlFor="buyer">Buyer</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="admin" id="admin" />
+                        <Label htmlFor="admin">Admin</Label>
+                      </div>
+                    </RadioGroup>
                   </div>
                 </CardContent>
                 <CardFooter>

@@ -41,7 +41,7 @@ const Dashboard = () => {
   const lowStockProducts = products?.filter(product => 
     // Assuming we consider low stock as less than 5 items
     // Note: This is a placeholder - we'll need to add inventory tracking
-    product.is_featured === false
+    product.featured === false
   ).length || 0;
   
   const totalRevenue = orders?.reduce((sum, order) => sum + order.total_amount, 0) || 0;
