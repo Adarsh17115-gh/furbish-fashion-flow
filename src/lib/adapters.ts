@@ -37,3 +37,12 @@ export const adaptDatabaseProductToUI = (product: DatabaseProduct): UIProduct =>
 export const adaptDatabaseProductsToUI = (products: DatabaseProduct[]): UIProduct[] => {
   return products.map(adaptDatabaseProductToUI);
 };
+
+/**
+ * Helper function to get a consistent product name regardless of product type
+ */
+export const getProductName = (product: DatabaseProduct | UIProduct): string => {
+  if ('name' in product) return product.name;
+  if ('title' in product) return product.title;
+  return 'Untitled Product';
+};

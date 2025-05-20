@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchProducts, addProduct, updateProduct, deleteProduct } from '@/lib/api';
+import { fetchProducts, addProduct, updateProduct, deleteProduct, uploadProductImage } from '@/lib/api';
 import {
   Dialog,
   DialogContent,
@@ -33,9 +33,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, Plus, Search, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
-import { Product } from '@/types/database';
+import { Loader2, Plus, Search, Edit, Trash2, Eye, EyeOff, UploadCloud } from 'lucide-react';
+import { Product as DatabaseProduct } from '@/types/database';
 import { Product as UIProduct } from '@/data/products';
+
+// Define a type that represents any product (DB or UI)
+type AnyProduct = DatabaseProduct | UIProduct;
 
 // Define the form data interface based on the Product type
 interface ProductFormData {
@@ -49,10 +52,8 @@ interface ProductFormData {
   sizes: string[];
   is_visible: boolean;
   is_featured: boolean;
+  images?: string[];
 }
-
-// Define a type that represents any product (DB or UI)
-type AnyProduct = Product | UIProduct;
 
 const ProductManager = () => {
   const { isAdmin } = useAuth();
@@ -62,6 +63,8 @@ const ProductManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingProduct, setEditingProduct] = useState<AnyProduct | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState<ProductFormData>({
@@ -75,6 +78,7 @@ const ProductManager = () => {
     sizes: [] as string[],
     is_visible: true,
     is_featured: false,
+    images: []
   });
   
   // Fetch products
@@ -85,11 +89,21 @@ const ProductManager = () => {
   
   // Add product mutation
   const addProductMutation = useMutation({
-    mutationFn: addProduct,
+    mutationFn: async (productData: Omit<DatabaseProduct, "id" | "created_at" | "updated_at">) => {
+      const product = await addProduct(productData);
+      
+      // If there's a selected file, upload it
+      if (selectedFile && product.id) {
+        await uploadProductImage(product.id, selectedFile);
+      }
+      
+      return product;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
       setShowAddDialog(false);
       resetForm();
+      setSelectedFile(null);
       toast({
         title: "Product Added",
         description: "The product has been successfully added.",
@@ -106,12 +120,21 @@ const ProductManager = () => {
   
   // Update product mutation
   const updateProductMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Product> }) => 
-      updateProduct(id, updates),
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<DatabaseProduct> }) => {
+      const product = await updateProduct(id, updates);
+      
+      // If there's a selected file, upload it
+      if (selectedFile) {
+        await uploadProductImage(id, selectedFile);
+      }
+      
+      return product;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'products'] });
       setEditingProduct(null);
       resetForm();
+      setSelectedFile(null);
       toast({
         title: "Product Updated",
         description: "The product has been successfully updated.",
@@ -157,6 +180,7 @@ const ProductManager = () => {
       sizes: [],
       is_visible: true,
       is_featured: false,
+      images: []
     });
   };
   
@@ -177,7 +201,7 @@ const ProductManager = () => {
         updates: productData,
       });
     } else {
-      addProductMutation.mutate(productData as Omit<Product, "id" | "created_at" | "updated_at">);
+      addProductMutation.mutate(productData as Omit<DatabaseProduct, "id" | "created_at" | "updated_at">);
     }
   };
   
@@ -187,21 +211,53 @@ const ProductManager = () => {
     }
   };
   
-  // Convert database product to UI format
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+  
+  // Convert product to form data format
   const mapProductToForm = (product: AnyProduct): ProductFormData => {
     return {
-      title: product.name || product.title || '',
+      title: getProductName(product),
       description: product.description || '',
-      price: (product.price || 0).toString(),
-      original_price: (product.originalPrice || product.original_price || '').toString(),
+      price: product.price.toString(),
+      original_price: getProductOriginalPrice(product),
       category: product.category || '',
       brand: product.brand || '',
       condition: product.condition || 'new',
       sizes: product.sizes || [],
-      is_visible: product.inStock !== undefined ? product.inStock : (product.is_visible || true),
-      is_featured: product.featured !== undefined ? product.featured : (product.is_featured || false),
+      is_visible: getProductVisibility(product),
+      is_featured: getProductFeatured(product),
+      images: product.images || []
     };
   };
+  
+  // Helper functions for handling different product types
+  function getProductName(product: AnyProduct): string {
+    if ('name' in product) return product.name;
+    if ('title' in product) return product.title;
+    return 'Untitled Product';
+  }
+  
+  function getProductOriginalPrice(product: AnyProduct): string {
+    if ('originalPrice' in product && product.originalPrice) return product.originalPrice.toString();
+    if ('original_price' in product && product.original_price) return product.original_price.toString();
+    return '';
+  }
+  
+  function getProductVisibility(product: AnyProduct): boolean {
+    if ('inStock' in product) return product.inStock;
+    if ('is_visible' in product) return product.is_visible;
+    return true;
+  }
+  
+  function getProductFeatured(product: AnyProduct): boolean {
+    if ('featured' in product) return product.featured;
+    if ('is_featured' in product) return product.is_featured;
+    return false;
+  }
   
   if (!isAdmin) {
     return null;
@@ -322,6 +378,49 @@ const ProductManager = () => {
                   </div>
                 </div>
                 
+                {/* Image Upload */}
+                <div className="space-y-2">
+                  <Label htmlFor="image">Product Image {!editingProduct && '*'}</Label>
+                  <div className="border rounded-md p-4">
+                    <div className="flex items-center gap-4">
+                      {selectedFile ? (
+                        <div className="w-20 h-20 border rounded-md overflow-hidden">
+                          <img 
+                            src={URL.createObjectURL(selectedFile)} 
+                            alt="Product preview" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : formData.images && formData.images.length > 0 ? (
+                        <div className="w-20 h-20 border rounded-md overflow-hidden">
+                          <img 
+                            src={formData.images[0]} 
+                            alt="Current product" 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-20 h-20 border rounded-md flex items-center justify-center bg-muted">
+                          <UploadCloud className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      
+                      <div className="flex-1">
+                        <Input
+                          id="image"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileChange}
+                          required={!editingProduct && (!formData.images || formData.images.length === 0)}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Upload a product image. Maximum size: 5MB
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
                 <DialogFooter>
                   <Button
                     type="button"
@@ -334,8 +433,11 @@ const ProductManager = () => {
                   >
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={addProductMutation.isPending}>
-                    {addProductMutation.isPending && (
+                  <Button 
+                    type="submit" 
+                    disabled={addProductMutation.isPending || updateProductMutation.isPending || isUploading}
+                  >
+                    {(addProductMutation.isPending || updateProductMutation.isPending) && (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     )}
                     {editingProduct ? 'Update Product' : 'Add Product'}
@@ -396,12 +498,12 @@ const ProductManager = () => {
                         <div className="w-10 h-10 rounded-md border overflow-hidden">
                           <img
                             src={product.images?.[0] || '/placeholder.svg'}
-                            alt={product.name || product.title || 'Product'}
+                            alt={getProductName(product)}
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div>
-                          <p className="font-medium">{product.name || product.title || 'Untitled Product'}</p>
+                          <p className="font-medium">{getProductName(product)}</p>
                           <p className="text-sm text-muted-foreground">{product.brand}</p>
                         </div>
                       </div>
@@ -410,15 +512,17 @@ const ProductManager = () => {
                     <TableCell>
                       <div>
                         <p className="font-medium">${product.price}</p>
-                        {(product.originalPrice || product.original_price) && (
+                        {(('originalPrice' in product && product.originalPrice) || 
+                          ('original_price' in product && product.original_price)) && (
                           <p className="text-sm text-muted-foreground line-through">
-                            ${product.originalPrice || product.original_price}
+                            ${('originalPrice' in product) ? product.originalPrice : product.original_price}
                           </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      {(product.inStock || product.is_visible) ? (
+                      {(('inStock' in product && product.inStock) || 
+                         ('is_visible' in product && product.is_visible)) ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Active
                         </span>
@@ -453,15 +557,19 @@ const ProductManager = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
+                            const isVisible = ('is_visible' in product) ? product.is_visible : 
+                                           ('inStock' in product) ? product.inStock : true;
+                            
                             updateProductMutation.mutate({
                               id: product.id,
                               updates: { 
-                                is_visible: !(product.inStock || product.is_visible) 
+                                is_visible: !isVisible 
                               },
                             });
                           }}
                         >
-                          {(product.inStock || product.is_visible) ? (
+                          {(('inStock' in product && product.inStock) || 
+                             ('is_visible' in product && product.is_visible)) ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />

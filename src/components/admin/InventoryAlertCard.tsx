@@ -5,6 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Product } from '@/types/database';
+import { Product as UIProduct } from '@/data/products';
+
+// Define a type that represents any product (DB or UI)
+type AnyProduct = Product | UIProduct;
 
 export const InventoryAlertCard = () => {
   const navigate = useNavigate();
@@ -41,12 +46,12 @@ export const InventoryAlertCard = () => {
                 <div className="w-12 h-12 rounded-md overflow-hidden border">
                   <img 
                     src={product.images?.[0] || '/placeholder.svg'} 
-                    alt={product.name || product.title || 'Product'}
+                    alt={getProductName(product)}
                     className="w-full h-full object-cover" 
                   />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm">{product.name || product.title || 'Untitled Product'}</h4>
+                  <h4 className="font-medium text-sm">{getProductName(product)}</h4>
                   <div className="flex gap-1 mt-1">
                     {product.sizes && product.sizes.map(size => (
                       <Badge key={size} variant="outline" className="text-xs py-0 h-5">
@@ -70,3 +75,10 @@ export const InventoryAlertCard = () => {
     </Card>
   );
 };
+
+// Helper functions for handling different product types
+function getProductName(product: AnyProduct): string {
+  if ('name' in product) return product.name;
+  if ('title' in product) return product.title;
+  return 'Untitled Product';
+}

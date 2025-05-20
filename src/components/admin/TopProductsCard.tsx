@@ -4,6 +4,11 @@ import { fetchProducts } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { Product } from '@/types/database';
+import { Product as UIProduct } from '@/data/products';
+
+// Define a type that represents any product (DB or UI)
+type AnyProduct = Product | UIProduct;
 
 export const TopProductsCard = () => {
   const navigate = useNavigate();
@@ -16,7 +21,10 @@ export const TopProductsCard = () => {
   // In a real application, this would be based on order data to find actual top-selling products
   // For now, we'll just display featured products as a placeholder
   const topProducts = products
-    ?.filter(product => product.featured || product.is_featured)
+    ?.filter(product => {
+      // Handle both UI and DB product types
+      return 'featured' in product ? product.featured : 'is_featured' in product ? product.is_featured : false;
+    })
     ?.slice(0, 5) || [];
     
   return (
@@ -40,17 +48,17 @@ export const TopProductsCard = () => {
                 <div className="w-12 h-12 rounded-md overflow-hidden border">
                   <img 
                     src={product.images?.[0] || '/placeholder.svg'} 
-                    alt={product.name || product.title || 'Product'} 
+                    alt={getProductName(product)} 
                     className="w-full h-full object-cover" 
                   />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm">{product.name || product.title || 'Untitled Product'}</h4>
+                  <h4 className="font-medium text-sm">{getProductName(product)}</h4>
                   <p className="text-xs text-muted-foreground">${product.price}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium">{product.category}</p>
-                  <p className="text-xs text-muted-foreground capitalize">{product.condition}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{getProductCondition(product)}</p>
                 </div>
               </div>
             ))}
@@ -64,3 +72,14 @@ export const TopProductsCard = () => {
     </Card>
   );
 };
+
+// Helper functions for handling different product types
+function getProductName(product: AnyProduct): string {
+  if ('name' in product) return product.name;
+  if ('title' in product) return product.title;
+  return 'Untitled Product';
+}
+
+function getProductCondition(product: AnyProduct): string {
+  return product.condition || 'New';
+}
