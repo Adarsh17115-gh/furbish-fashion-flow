@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Product as DatabaseProduct } from '@/types/database';
 import { adaptDatabaseProductsToUI, adaptDatabaseProductToUI } from '@/lib/adapters';
@@ -13,6 +14,7 @@ export const fetchProducts = async (filters: {
   category?: string;
   subcategory?: string;
   featured?: boolean;
+  search?: string;
   limit?: number;
 } = {}): Promise<UIProduct[]> => {
   let query = supabase.from('products')
@@ -24,6 +26,10 @@ export const fetchProducts = async (filters: {
   
   if (filters.featured) {
     query = query.eq('is_featured', true);
+  }
+
+  if (filters.search) {
+    query = query.ilike('title', `%${filters.search}%`);
   }
   
   if (filters.limit) {
@@ -125,4 +131,19 @@ export const uploadProductImage = async (productId: string, file: File) => {
   if (error) throw error;
   
   return `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${filePath}`;
+};
+
+export const deleteProductImage = async (productId: string, imageUrl: string) => {
+  // Extract the file name from the URL
+  const fileName = imageUrl.split('/').pop();
+  if (!fileName) throw new Error("Invalid image URL");
+  
+  const filePath = `${productId}/${fileName}`;
+  
+  const { error } = await supabase.storage
+    .from('product-images')
+    .remove([filePath]);
+  
+  if (error) throw error;
+  return true;
 };

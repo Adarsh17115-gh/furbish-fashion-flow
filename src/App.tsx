@@ -5,7 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Pages
 import Index from "./pages/Index";
@@ -16,6 +16,8 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/admin/Dashboard";
 import ProductManager from "./pages/admin/ProductManager";
 import OrderManager from "./pages/admin/OrderManager";
+import CustomerManager from "./pages/admin/CustomerManager";
+import DiscountManager from "./pages/admin/DiscountManager";
 import Checkout from "./pages/Checkout";
 import OrderHistory from "./pages/OrderHistory";
 import AboutUs from "./pages/AboutUs";
@@ -69,6 +71,8 @@ const App = () => (
               <Route path="/admin" element={<Dashboard />} />
               <Route path="/admin/products" element={<ProductManager />} />
               <Route path="/admin/orders" element={<OrderManager />} />
+              <Route path="/admin/customers" element={<CustomerManager />} />
+              <Route path="/admin/discounts" element={<DiscountManager />} />
             </Route>
             
             {/* 404 route */}
