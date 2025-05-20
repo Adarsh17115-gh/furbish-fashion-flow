@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ import { Loader2, Plus, Search, Edit, Trash2, Eye, EyeOff, UploadCloud } from 'l
 import { Product as DatabaseProduct } from '@/types/database';
 import { Product as UIProduct } from '@/data/products';
 import { AdminProduct } from '@/types/admin';
+import { getProductName, getProductOriginalPrice, getProductVisibility, getProductFeatured } from '@/lib/adapters';
 
 // Define the form data interface based on the Product type
 interface ProductFormData {
@@ -230,31 +232,6 @@ const ProductManager = () => {
       images: product.images || []
     };
   };
-  
-  // Helper functions for handling different product types
-  function getProductName(product: AdminProduct): string {
-    if ('name' in product) return product.name;
-    if ('title' in product) return product.title;
-    return 'Untitled Product';
-  }
-  
-  function getProductOriginalPrice(product: AdminProduct): string {
-    if ('originalPrice' in product && product.originalPrice) return product.originalPrice.toString();
-    if ('original_price' in product && product.original_price) return product.original_price.toString();
-    return '';
-  }
-  
-  function getProductVisibility(product: AdminProduct): boolean {
-    if ('inStock' in product) return product.inStock;
-    if ('is_visible' in product) return product.is_visible;
-    return true;
-  }
-  
-  function getProductFeatured(product: AdminProduct): boolean {
-    if ('featured' in product) return product.featured;
-    if ('is_featured' in product) return product.is_featured;
-    return false;
-  }
   
   if (!isAdmin) {
     return null;
@@ -512,16 +489,15 @@ const ProductManager = () => {
                     <TableCell>
                       <div>
                         <p className="font-medium">${product.price}</p>
-                        {('originalPrice' in product && product.originalPrice || 'original_price' in product && product.original_price) && (
+                        {getProductOriginalPrice(product) && (
                           <p className="text-sm text-muted-foreground line-through">
-                            ${('originalPrice' in product) ? product.originalPrice : product.original_price}
+                            ${getProductOriginalPrice(product)}
                           </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      {(('inStock' in product && product.inStock) || 
-                         ('is_visible' in product && product.is_visible)) ? (
+                      {getProductVisibility(product) ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Active
                         </span>
@@ -556,8 +532,7 @@ const ProductManager = () => {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            const isVisible = ('is_visible' in product) ? product.is_visible : 
-                                           ('inStock' in product) ? product.inStock : true;
+                            const isVisible = getProductVisibility(product);
                             
                             updateProductMutation.mutate({
                               id: product.id,
@@ -567,8 +542,7 @@ const ProductManager = () => {
                             });
                           }}
                         >
-                          {(('inStock' in product && product.inStock) || 
-                             ('is_visible' in product && product.is_visible)) ? (
+                          {getProductVisibility(product) ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />
