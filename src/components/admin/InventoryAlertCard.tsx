@@ -41,12 +41,12 @@ export const InventoryAlertCard = () => {
                 <div className="w-12 h-12 rounded-md overflow-hidden border">
                   <img 
                     src={product.images?.[0] || '/placeholder.svg'} 
-                    alt={product.name || product.title}
+                    alt={product.name || product.title || 'Product'}
                     className="w-full h-full object-cover" 
                   />
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm">{product.name || product.title}</h4>
+                  <h4 className="font-medium text-sm">{product.name || product.title || 'Untitled Product'}</h4>
                   <div className="flex gap-1 mt-1">
                     {product.sizes && product.sizes.map(size => (
                       <Badge key={size} variant="outline" className="text-xs py-0 h-5">

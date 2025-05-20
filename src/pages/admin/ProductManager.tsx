@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import Layout from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { Loader2, Plus, Search, Edit, Trash2, Eye, EyeOff } from 'lucide-react';
 import { Product } from '@/types/database';
+import { Product as UIProduct } from '@/data/products';
 
 // Define the form data interface based on the Product type
 interface ProductFormData {
@@ -49,6 +51,9 @@ interface ProductFormData {
   is_featured: boolean;
 }
 
+// Define a type that represents any product (DB or UI)
+type AnyProduct = Product | UIProduct;
+
 const ProductManager = () => {
   const { isAdmin } = useAuth();
   const { toast } = useToast();
@@ -56,7 +61,7 @@ const ProductManager = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [editingProduct, setEditingProduct] = useState<AnyProduct | null>(null);
   
   // Form state
   const [formData, setFormData] = useState<ProductFormData>({
@@ -183,7 +188,7 @@ const ProductManager = () => {
   };
   
   // Convert database product to UI format
-  const mapProductToForm = (product: any): ProductFormData => {
+  const mapProductToForm = (product: AnyProduct): ProductFormData => {
     return {
       title: product.name || product.title || '',
       description: product.description || '',
@@ -391,12 +396,12 @@ const ProductManager = () => {
                         <div className="w-10 h-10 rounded-md border overflow-hidden">
                           <img
                             src={product.images?.[0] || '/placeholder.svg'}
-                            alt={product.name}
+                            alt={product.name || product.title || 'Product'}
                             className="w-full h-full object-cover"
                           />
                         </div>
                         <div>
-                          <p className="font-medium">{product.name}</p>
+                          <p className="font-medium">{product.name || product.title || 'Untitled Product'}</p>
                           <p className="text-sm text-muted-foreground">{product.brand}</p>
                         </div>
                       </div>
@@ -405,15 +410,15 @@ const ProductManager = () => {
                     <TableCell>
                       <div>
                         <p className="font-medium">${product.price}</p>
-                        {product.originalPrice && (
+                        {(product.originalPrice || product.original_price) && (
                           <p className="text-sm text-muted-foreground line-through">
-                            ${product.originalPrice}
+                            ${product.originalPrice || product.original_price}
                           </p>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      {product.inStock ? (
+                      {(product.inStock || product.is_visible) ? (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Active
                         </span>
@@ -450,11 +455,13 @@ const ProductManager = () => {
                           onClick={() => {
                             updateProductMutation.mutate({
                               id: product.id,
-                              updates: { is_visible: !product.inStock },
+                              updates: { 
+                                is_visible: !(product.inStock || product.is_visible) 
+                              },
                             });
                           }}
                         >
-                          {product.inStock ? (
+                          {(product.inStock || product.is_visible) ? (
                             <EyeOff className="h-4 w-4" />
                           ) : (
                             <Eye className="h-4 w-4" />
