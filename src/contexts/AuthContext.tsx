@@ -5,6 +5,9 @@ import { useToast } from '@/components/ui/use-toast';
 import { Session, User } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 
+// Define a list of admin emails
+const ADMIN_EMAILS = ['admin@example.com']; // Replace with your actual admin email
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -24,8 +27,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check if the current user is an admin
-  const isAdmin = !!user?.user_metadata?.role && user.user_metadata.role === 'admin';
+  // Determine admin status based on email address
+  const isAdmin = user?.email ? ADMIN_EMAILS.includes(user.email) : false;
 
   // Initialize the auth state
   useEffect(() => {
@@ -49,7 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Sign up function
+  // Sign up function - still includes role in metadata for future compatibility
+  // but all new users will be registered with 'buyer' role by default
   const signUp = async (email: string, password: string, role: 'buyer' | 'admin') => {
     try {
       const { error } = await supabase.auth.signUp({
@@ -57,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
         options: {
           data: {
-            role
+            role: 'buyer' // Force all new users to be buyers
           }
         }
       });
