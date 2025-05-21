@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Product as DatabaseProduct } from '@/types/database';
 import { adaptDatabaseProductsToUI, adaptDatabaseProductToUI } from '@/lib/adapters';
@@ -64,24 +63,35 @@ export const fetchProducts = async (filters: {
   
   const { data, error } = await query;
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching products:', error.message);
+    throw error;
+  }
 
   // Fetch images for each product
   const productsWithImages = await Promise.all((data || []).map(async (product) => {
-    const storageResponse: StorageResponse = await supabase.storage
-      .from('product-images')
-      .list(product.id.toString());
+    try {
+      const storageResponse: StorageResponse = await supabase.storage
+        .from('product-images')
+        .list(product.id.toString());
 
-    const images = storageResponse.data
-      ? storageResponse.data.map(file => 
-          `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${product.id}/${file.name}`
-        )
-      : [];
+      const images = storageResponse.data
+        ? storageResponse.data.map(file => 
+            `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${product.id}/${file.name}`
+          )
+        : [];
 
-    return {
-      ...product,
-      images: images.length > 0 ? images : ['/placeholder.svg']
-    };
+      return {
+        ...product,
+        images: images.length > 0 ? images : ['/placeholder.svg']
+      };
+    } catch (error) {
+      console.error(`Error fetching images for product ${product.id}:`, error);
+      return {
+        ...product,
+        images: ['/placeholder.svg']
+      };
+    }
   }));
   
   // Cast products with defined type to avoid TypeScript recursion
@@ -96,20 +106,29 @@ export const fetchProductById = async (id: string): Promise<UIProduct> => {
     .eq('id', id)
     .single();
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error fetching product by ID:', error.message);
+    throw error;
+  }
   
-  const storageResponse: StorageResponse = await supabase.storage
-    .from('product-images')
-    .list(id);
+  try {
+    const storageResponse: StorageResponse = await supabase.storage
+      .from('product-images')
+      .list(id);
 
-  const images = storageResponse.data
-    ? storageResponse.data.map(file => 
-        `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${id}/${file.name}`
-      )
-    : ['/placeholder.svg'];
-  
-  const productWithImages = { ...data, images } as DatabaseProduct;
-  return adaptDatabaseProductToUI(productWithImages);
+    const images = storageResponse.data
+      ? storageResponse.data.map(file => 
+          `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${id}/${file.name}`
+        )
+      : ['/placeholder.svg'];
+    
+    const productWithImages = { ...data, images } as DatabaseProduct;
+    return adaptDatabaseProductToUI(productWithImages);
+  } catch (error) {
+    console.error(`Error fetching images for product ${id}:`, error);
+    const productWithPlaceholder = { ...data, images: ['/placeholder.svg'] } as DatabaseProduct;
+    return adaptDatabaseProductToUI(productWithPlaceholder);
+  }
 };
 
 export const addProduct = async (productData: Omit<DatabaseProduct, 'id' | 'created_at' | 'updated_at'>) => {
@@ -119,7 +138,10 @@ export const addProduct = async (productData: Omit<DatabaseProduct, 'id' | 'crea
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error adding product:', error.message);
+    throw error;
+  }
   return data as DatabaseProduct;
 };
 
@@ -131,31 +153,39 @@ export const updateProduct = async (id: string, updates: Partial<DatabaseProduct
     .select()
     .single();
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error updating product:', error.message);
+    throw error;
+  }
   return data as DatabaseProduct;
 };
 
 export const deleteProduct = async (id: string) => {
-  // First, delete all images from storage
-  const { data: imageList } = await supabase.storage
-    .from('product-images')
-    .list(id);
-  
-  if (imageList && imageList.length > 0) {
-    const imagePaths = imageList.map(file => `${id}/${file.name}`);
-    await supabase.storage
+  try {
+    // First, delete all images from storage
+    const { data: imageList } = await supabase.storage
       .from('product-images')
-      .remove(imagePaths);
+      .list(id);
+    
+    if (imageList && imageList.length > 0) {
+      const imagePaths = imageList.map(file => `${id}/${file.name}`);
+      await supabase.storage
+        .from('product-images')
+        .remove(imagePaths);
+    }
+    
+    // Then delete the product
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    throw error;
   }
-  
-  // Then delete the product
-  const { error } = await supabase
-    .from('products')
-    .delete()
-    .eq('id', id);
-  
-  if (error) throw error;
-  return true;
 };
 
 export const uploadProductImage = async (productId: string, file: File) => {
@@ -167,7 +197,10 @@ export const uploadProductImage = async (productId: string, file: File) => {
     .from('product-images')
     .upload(filePath, file);
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error uploading product image:', error.message);
+    throw error;
+  }
   
   return `${process.env.VITE_SUPABASE_URL}/storage/v1/object/public/product-images/${filePath}`;
 };
@@ -183,6 +216,9 @@ export const deleteProductImage = async (productId: string, imageUrl: string) =>
     .from('product-images')
     .remove([filePath]);
   
-  if (error) throw error;
+  if (error) {
+    console.error('Error deleting product image:', error.message);
+    throw error;
+  }
   return true;
 };

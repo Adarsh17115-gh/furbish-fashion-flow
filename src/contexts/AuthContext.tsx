@@ -5,9 +5,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { Session, User } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 
-// Define a list of admin emails
-const ADMIN_EMAILS = ['admin@example.com']; // Replace with your actual admin email
-
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -24,11 +21,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Determine admin status based on email address
-  const isAdmin = user?.email ? ADMIN_EMAILS.includes(user.email) : false;
+  // Check admin status whenever user changes
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .from('admins')
+          .select('user_id')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+          return;
+        }
+        
+        setIsAdmin(!!data);
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+      }
+    };
+    
+    checkAdminStatus();
+  }, [user]);
 
   // Initialize the auth state
   useEffect(() => {
@@ -52,8 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Sign up function - still includes role in metadata for future compatibility
-  // but all new users will be registered with 'buyer' role by default
+  // Sign up function - all new users will be registered with 'buyer' role by default
   const signUp = async (email: string, password: string, role: 'buyer' | 'admin') => {
     try {
       const { error } = await supabase.auth.signUp({
