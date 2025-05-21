@@ -29,9 +29,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (!user) {
+        console.log('No user found, not checking admin status');
         setIsAdmin(false);
         return;
       }
+      
+      console.log('Checking admin status for user:', user.email);
       
       try {
         const { data, error } = await supabase
@@ -42,19 +45,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           
         if (error) {
           console.error('Error checking admin status:', error);
+          toast({
+            title: "Admin Check Failed",
+            description: `Could not verify admin status: ${error.message}`,
+            variant: "destructive",
+          });
           setIsAdmin(false);
           return;
         }
         
-        setIsAdmin(!!data);
-      } catch (error) {
-        console.error('Error checking admin status:', error);
+        const hasAdminRole = !!data;
+        console.log('Admin check result:', hasAdminRole ? 'User is admin' : 'User is not admin', data);
+        setIsAdmin(hasAdminRole);
+        
+        if (hasAdminRole) {
+          toast({
+            title: "Admin Access Granted",
+            description: "You have administrator privileges",
+          });
+        }
+      } catch (error: any) {
+        console.error('Exception in admin status check:', error);
+        toast({
+          title: "Admin Check Error",
+          description: `An unexpected error occurred: ${error.message}`,
+          variant: "destructive",
+        });
         setIsAdmin(false);
       }
     };
     
     checkAdminStatus();
-  }, [user]);
+  }, [user, toast]);
 
   // Initialize the auth state
   useEffect(() => {
